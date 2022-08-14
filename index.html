@@ -9,7 +9,7 @@
 <script src="gpu-browser.min.js"></script>
 <script>
     let _data = {
-      eps: 1.0,
+      eps: 1,
       min_points: 3,
       inputs: [
         [1.5, 2.2],
@@ -26,13 +26,21 @@
     
     // parameters
     let data = _data.inputs.flat()
-    // let data = Array(2500000).fill().map(x => Math.random())
+    
+
+    // let data = Array(500000).fill().map(x => Math.random())
+    console.log('start')
+
+
+    let ini = performance.now()
+    
+
     let size = data.length
     let min_points = _data.min_points
     let eps = _data.eps
 
-    // let dim = _data.inputs[0].length
-    let dim = 2
+    let dim = _data.inputs[0].length
+    // let dim = 2
     
     let bufferStepSize = 2
     let buffer = Array(size/dim*bufferStepSize).fill(-1)
@@ -47,7 +55,9 @@
             // if (i===j) continue // TODO: shoud point be compared with itself?
 
             // compute euclidian distance
-            if (Math.sqrt(Math.pow(data[i]-data[j], 2) + Math.pow(data[i+1]-data[j+1], 2)) < eps) {
+            let sumSquare = 0
+            for (let k = 0; k < dim; k++) sumSquare += Math.pow(data[i+k]-data[j+k], 2)
+            if (Math.sqrt(sumSquare) < eps) {
                 closePoints += 1
             }
 
@@ -71,11 +81,12 @@
 
         buffer[i/dim*bufferStepSize+1] = clusterId
 
-        // TODO: do this loop on GPU
         for (let j = 0; j < size; j+=dim) {
 
             // compute euclidian distance
-            if (Math.sqrt(Math.pow(data[i]-data[j], 2) + Math.pow(data[i+1]-data[j+1], 2)) < eps) {
+            let sumSquare = 0
+            for (let k = 0; k < dim; k++) sumSquare += Math.pow(data[i+k]-data[j+k], 2)
+            if (Math.sqrt(sumSquare) < eps) {
                 buffer[j/dim*bufferStepSize+1] = clusterId
             }
         }
@@ -84,7 +95,7 @@
     }
 
 
-    // add non core points to close clusters
+    // add non core points (edge) to close clusters
     for (let i = 0; i < size; i+=dim) {
         
         // skip if is a core point
@@ -93,11 +104,12 @@
         // skip if clusterId already assigned
         if (buffer[i/dim*bufferStepSize+1] !== -1) continue
 
-        // TODO: do this loop on GPU
         for (let j = 0; j < size; j+=dim) {
 
             // compute euclidian distance
-            if (Math.sqrt(Math.pow(data[i]-data[j], 2) + Math.pow(data[i+1]-data[j+1], 2)) < eps) {
+            let sumSquare = 0
+            for (let k = 0; k < dim; k++) sumSquare += Math.pow(data[i+k]-data[j+k], 2)
+            if (Math.sqrt(sumSquare) < eps) {
                 buffer[i/dim*bufferStepSize+1] = buffer[j/dim*bufferStepSize+1]
                 // TODO: shoud we set anywhere that this is a edge?
             }
@@ -105,6 +117,8 @@
     }
     
     
+    console.log(performance.now()-ini)
+
     console.log(buffer)
     console.log(buffer.filter((x, i) => i % 2))
 
